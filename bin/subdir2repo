@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'methadone'
+require 'subdir2repo.rb'
+
+module Subdir2repo
+  class App
+    include Methadone::Main
+    include Methadone::CLILogging
+    
+    main do |src_repo, subdir|
+      new_repo_name = options[:repo_name] ? options[:repo_name] : File.basename(subdir)
+      
+      Subdir2repo.extract_subdir(src_repo, subdir, new_repo_name, options)
+      if options[:git_org] && (not options[:git_org].empty?)
+        SubDir2repo.push_repo(subdir, options)
+      end
+    end
+
+    description "Clone src_repo, extract subdir and turn it into its own repo. Push to Github Org/Account if specified"
+
+    DEFAULTS.each { |k,v| options[k] = v }
+
+    on "-g", "--git_org ORG_NAME", "Github org/account to add this repo to"
+    on "-p", "--new_repo_parent_dir", "Path to where to create the new repo"
+    on "-r", "--repo_name", "Override name of new repo", "(default: Basename of subdir)"
+    
+    arg :src_repo, "Local file path to Source Repo directory to clone and extract subdir from"
+    arg :subdir, "Sub Directory to copy from src_repo and make its own repo"
+    
+    version Subdir2repo::VERSION
+
+    use_log_level_option
+
+    go!
+  end
+end
