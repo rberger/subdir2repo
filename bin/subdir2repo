@@ -3,12 +3,14 @@
 require 'optparse'
 require 'methadone'
 require 'subdir2repo'
-require 'subdir2repo/extract_subdir.rb'
+require 'subdir2repo/extract_subdir'
+require 'subdir2repo/push_repo'
 
 module Subdir2repo
   class App
     include Methadone::Main
     include Methadone::CLILogging
+    
     target = {}
     
     main do |src_repo, subdir|
@@ -16,25 +18,25 @@ module Subdir2repo
       target[:name] = options[:repo_name] ? options[:repo_name] : File.basename(subdir)
       target[:src_path] = "#{src_repo}/#{subdir}"
       target[:parent_dir] = options[:new_repo_parent_dir]
-      target[:dst_repo_path] = File.join(target[:parent_dir], target[:subdir])
+      target[:dst_repo_path] = File.join(target[:parent_dir], target[:name])
       
       case
       when (not Dir.exist? src_repo)
-        help_now! "src_repo: #{src_repo.inspect} is not a directory"
+        exit_now! -1, "The src_repo: #{src_repo.inspect} is not a directory"
       when (not Dir.exist? "#{src_repo}/.git")
-        help_now! "src_repo: #{src_repo.inspect} is not a git repo (no #{src_repo}/.git)"
+        exit_now! -1, "The src_repo: #{src_repo.inspect} is not a git repo (no #{src_repo}/.git)"
       when (not Dir.exist? target[:src_path])
-        help_now! "src_repo/subdir(#{src_repo}/#{subdir} does not exist"
+        exit_now! -1, "The src_repo/subdir(#{src_repo}/#{subdir} does not exist"
       when (not Dir.exist? target[:parent_dir])
-        help_now! "target new_repo_parent_dir: #{target[:parent_dir].inspect} does not exist"
+        exit_now! -1, "Target new_repo_parent_dir: #{target[:parent_dir].inspect} does not exist"
       when Dir.exist?(target[:dst_repo_path])
-       help_now! "target new_repo directory: #{target[:dst_repo_path].inspect} already exists. Please check and delete"
+       exit_now! -1, "Target repo path: #{target[:dst_repo_path].inspect} already exists. Please check and delete"
       end
       
       
       Subdir2repo.extract_subdir(src_repo, target, options)
       if options[:git_org] && (not options[:git_org].empty?)
-        SubDir2repo.push_repo(target, options)
+        Subdir2repo.push_repo(target, options)
       end
     end
 
