@@ -8,13 +8,32 @@ module Subdir2repo
   class App
     include Methadone::Main
     include Methadone::CLILogging
+    target = {}
     
     main do |src_repo, subdir|
-      new_repo_name = options[:repo_name] ? options[:repo_name] : File.basename(subdir)
+      target[:subdir] = subdir
+      target[:name] = options[:repo_name] ? options[:repo_name] : File.basename(subdir)
+      target[:src_path] = "#{src_repo}/#{subdir}"
+      target[:parent_dir] = options[:new_repo_parent_dir]
+      target[:dst_repo_path] = File.join(target[:parent_dir], target[:subdir])
+                                    
+      case
+      when not Dir.exist? src_repo
+        help_now! "src_repo: #{src_repo.inspect} is not a directory"
+      when not Dir.exist? "#{src_repo}/.git"
+        help_now! "src_repo: #{src_repo.inspect} is not a git repo (no #{src_repo}/.git)"
+      when not Dir.exist? target[:src_path]
+        help_now! "src_repo/subdir(#{src_repo}/#{subdir} does not exist"
+      when not Dir.exist? target[:parent_dir]
+        help_now! "target new_repo_parent_dir: #{target[:parent_dir].inspect} does not exist"
+      when Dir.exist? target[:dst_repo_path]
+        help_now! "target new_repo directory: #{target[:dst_repo_path].inspect} already exists. Please check and delete"
+      end
       
-      Subdir2repo.extract_subdir(src_repo, subdir, new_repo_name, options)
+      
+      Subdir2repo.extract_subdir(src_repo, target, options)
       if options[:git_org] && (not options[:git_org].empty?)
-        SubDir2repo.push_repo(subdir, options)
+        SubDir2repo.push_repo(target, options)
       end
     end
 
@@ -25,7 +44,7 @@ module Subdir2repo
     on "-g", "--git_org ORG_NAME", "Github org/account to add this repo to"
     on "-p", "--new_repo_parent_dir", "Path to where to create the new repo"
     on "-r", "--repo_name", "Override name of new repo", "(default: Basename of subdir)"
-    
+#    on "--preserve_branches BRANCH0,BRANCH1,BRANCHn", Array, "One or more branches of the source repo to preserve in target repo"
     arg :src_repo, "Local file path to Source Repo directory to clone and extract subdir from"
     arg :subdir, "Sub Directory to copy from src_repo and make its own repo"
     
