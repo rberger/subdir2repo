@@ -14,11 +14,11 @@ module Subdir2repo
     info "In your #{Dir.pwd} making it a local repo"
     sh "git remote rm origin"
     sh "git tag -l | xargs git tag -d"
-    sh "git filter-branch --tag-name-filter cat --prune-empty --subdirectory-filter #{target[:subdir]} -- --all"
-    sh "git reset --hard"
-    sh "git for-each-ref --format=\"%(refname)\" refs/original/ | xargs -n 1 git update-ref -d"
-    sh "git reflog expire --expire=now --all"
-    sh "git gc --aggressive --prune=now"
+    sh! "git filter-branch --tag-name-filter cat --prune-empty --subdirectory-filter #{target[:subdir]} -- --all"
+    sh! "git reset --hard"
+    sh! "git for-each-ref --format=\"%(refname)\" refs/original/ | xargs -n 1 git update-ref -d"
+    sh! "git reflog expire --expire=now --all"
+    sh! "git gc --aggressive --prune=now"
     info "Done makeing a local repo #{target[:name]} in #{Dir.pwd}"
   end
 end
